@@ -104,17 +104,64 @@
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <p><strong>AI Railway Sim</strong> is an autonomous infrastructure simulation where AI agents plan and build a futuristic railway network in real-time.</p>
-        <div class="agent-docs">
-          <div class="agent-info">
-            <span class="agent-tag gemini">COMMANDER (Gemini)</span>
-            <p>Directs the strategic expansion. Decides where the network should go next based on current topology.</p>
-          </div>
-          <div class="agent-info">
-            <span class="agent-tag groq">WORKER (Groq)</span>
-            <p>Executes the commander's orders. Uses Llama 3 to calculate coordinates and build new stations and tracks instantly.</p>
+        <div class="help-section">
+          <h3>🤖 THE AGENTS</h3>
+          <div class="agent-docs">
+            <div class="agent-info">
+              <span class="agent-tag gemini">COMMANDER (Gemini)</span>
+              <p>Strategist. Decides WHERE to expand next based on map topography.</p>
+            </div>
+            <div class="agent-info">
+              <span class="agent-tag groq">WORKER (Groq)</span>
+              <p>Architect. Calculates precise coordinates and builds stations/tracks.</p>
+            </div>
           </div>
         </div>
+
+        <div class="help-section">
+          <h3>🕹️ CONTROLS</h3>
+          <div class="help-item">
+            <span class="help-key">NAV PAD</span>
+            <span class="help-desc">Use arrows to pan the map. Center button (◎) resets view to origin.</span>
+          </div>
+          <div class="help-item">
+            <span class="help-key">+/- SLIDER</span>
+            <span class="help-desc">Zoom in for detail or out for a global view of the network.</span>
+          </div>
+          <div class="help-item">
+            <span class="help-key">👁️ RIDE</span>
+            <span class="help-desc">Locks focus on a specific train. Watch the world go by from its perspective.</span>
+          </div>
+          <div class="help-item">
+            <span class="help-key">📍 JUMP</span>
+            <span class="help-desc">Instantly pans to the first active train on the map.</span>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h3>⚙️ SETTINGS</h3>
+          <div class="help-item">
+            <span class="help-key">🤖 AUTO</span>
+            <span class="help-desc">Enables autonomous expansion. Agents will build every 2 real-world hours automatically.</span>
+          </div>
+          <div class="help-item">
+            <span class="help-key">🤖 EXPAND</span>
+            <span class="help-desc">Forces an immediate AI expansion cycle (Manual override).</span>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h3>📊 PANELS</h3>
+          <div class="help-item">
+            <span class="help-key">COMMS</span>
+            <span class="help-desc">Live log of AI decisions, dispatches, and construction success.</span>
+          </div>
+          <div class="help-item">
+            <span class="help-key">LOG BOOK</span>
+            <span class="help-desc">Top-right widget showing the latest Yesterday/Today strategic status.</span>
+          </div>
+        </div>
+
         <p class="modal-footer-note">Watch the map expand as the agents work together to colonize the digital canvas.</p>
       </div>
     </div>

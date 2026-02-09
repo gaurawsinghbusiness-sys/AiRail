@@ -86,7 +86,7 @@ async function expandNetwork() {
     Canvas: 800x600 px.
     
     Task: Create 1 new station connected to the last one.
-    Constraint: Keep Y between 50 and 550. X between 50 and 750. Distance ~100-200px.
+    Constraint: Keep Y between 50 and 550. X must be > lastStation.x + 200. Distance ~300-500px.
     
     Return JSON ONLY:
     { "name": "Station Name", "x": 123, "y": 456, "reason": "Tactical reason" }
@@ -115,22 +115,10 @@ async function expandNetwork() {
     logger.error('WORKER Failed:', error.message);
     // EXPOSE ERROR TO UI FOR DEBUGGING
     db.addEvent('SYSTEM', `⚠️ Worker Error: ${error.message}`);
-    return fallbackExpansion();
+    return { success: false, error: error.message };
   }
 }
 
-function fallbackExpansion() {
-  // ... existing fallback code ...
-  const stations = db.getStations();
-  const lastStation = stations[stations.length - 1];
-  const angle = Math.random() * Math.PI * 0.5;
-  const distance = 150;
-  const newX = lastStation.x + Math.cos(angle) * distance;
-  const newY = Math.max(100, Math.min(500, lastStation.y + Math.sin(angle) * distance));
-  const name = `Sector ${String.fromCharCode(65 + stations.length)} Hub`;
-  const newId = db.addStation(name, newX, newY);
-  db.addEvent('SYSTEM', `⚠️ Worker Offline. Fallback: ${name}`);
-  return { success: true, stationId: newId };
-}
+// Fallback Removed per User Request ("REMOVE OFFILINE WORKERS")
 
 module.exports = { expandNetwork };

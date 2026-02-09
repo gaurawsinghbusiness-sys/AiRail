@@ -34,6 +34,8 @@ const trainCountEl = document.getElementById('train-count');
 const expandBtn = document.getElementById('expand-btn');
 const viewCoordsEl = document.getElementById('view-coords');
 const viewZoomEl = document.getElementById('view-zoom');
+const logYesterdayEl = document.getElementById('log-yesterday');
+const logTodayEl = document.getElementById('log-today');
 
 // ============== INITIALIZATION ==============
 
@@ -169,6 +171,7 @@ async function fetchState() {
     events = data.events;
     updateHeaderStats();
     renderCommsFeed();
+    renderLogBook();
     render(); 
   } catch (err) {
     console.error('Failed to fetch state:', err);
@@ -608,3 +611,32 @@ setupEventListeners = function() {
   setupNavigationControls();
   setupAutoControls();
 };
+
+function renderLogBook() {
+  if (!logYesterdayEl || !logTodayEl) return;
+  
+  // TODAY: Latest COMMANDER Strategy
+  const commanderEvent = events.slice().reverse().find(e => e.type === 'COMMANDER');
+  if (commanderEvent) {
+    let text = commanderEvent.message.replace('📜 Daily Strategy: ', '');
+    if (text.length > 80) text = text.substring(0, 77) + '...';
+    // Remove JSON artifacts just in case
+    text = text.replace(/[{}"\\]/g, '').replace('strategy:', '').trim();
+    logTodayEl.textContent = text;
+    logTodayEl.title = new Date(commanderEvent.timestamp).toLocaleString();
+  } else {
+    logTodayEl.textContent = "Awaiting Daily Strategy...";
+  }
+
+  // YESTERDAY: Latest SUCCESSFUL Worker Action
+  const workerEvent = events.slice().reverse().find(e => e.type === 'AI_WORKER' && !e.message.includes('Error'));
+  if (workerEvent) {
+    let text = workerEvent.message.replace('🔨 ', '');
+    // Truncate
+    if (text.length > 50) text = text.substring(0, 47) + '...';
+    logYesterdayEl.textContent = text;
+    logYesterdayEl.title = new Date(workerEvent.timestamp).toLocaleString();
+  } else {
+    logYesterdayEl.textContent = "No recent construction.";
+  }
+}

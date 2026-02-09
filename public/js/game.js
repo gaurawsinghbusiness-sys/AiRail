@@ -177,10 +177,21 @@ async function fetchState() {
   try {
     const res = await fetch('/api/state');
     const data = await res.json();
+    
+    // Protect local movement: Keep local x,y for trains that are currently moving
+    data.trains.forEach(newTrain => {
+      const localTrain = trains.find(t => t.id === newTrain.id);
+      if (localTrain && localTrain.status === 'moving' && newTrain.status === 'moving') {
+        newTrain.x = localTrain.x;
+        newTrain.y = localTrain.y;
+      }
+    });
+
     stations = data.stations;
     trains = data.trains;
-    tracks = data.tracks; // New: Fetch tracks
+    tracks = data.tracks;
     events = data.events;
+    
     updateHeaderStats();
     renderCommsFeed();
     renderLogBook();
@@ -388,7 +399,7 @@ function startSimulation() {
 }
 
 async function simulationTick() {
-  let stateChanged = false;
+  let arrivals = false;
   for (const train of trains) {
     if (train.status !== 'moving' || !train.target_station_id) continue;
     const target = stations.find(s => s.id === train.target_station_id);
@@ -408,17 +419,20 @@ async function simulationTick() {
       train.status = 'idle';
       train.current_station_id = target.id;
       train.target_station_id = null;
-      await fetch(`/api/train/${train.id}/update`, {
+      
+      // Update server WITHOUT awaiting (fire and forget for responsiveness)
+      fetch(`/api/train/${train.id}/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ x: train.x, y: train.y, status: 'idle', current_station_id: target.id })
       });
-      await fetchState();
+      arrivals = true;
     } else {
       train.x += (dx / distance) * pixelsPerTick;
       train.y += (dy / distance) * pixelsPerTick;
     }
   }
+  if (arrivals) fetchState();
 }
 
 async function dispatchTrainTo(stationId) {

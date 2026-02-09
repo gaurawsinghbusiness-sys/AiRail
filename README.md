@@ -50,4 +50,4 @@ AiRail explores the frontier of **Multi-Agent Collaboration**. It features a uni
 
 ---
 
-_Created for the India AI Impact Buildathon._
+_Created for the Google DeepMind Devpost Hackathon._

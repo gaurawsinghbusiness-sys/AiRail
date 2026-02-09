@@ -156,10 +156,24 @@ module.exports = {
   getStation,
   updateTrain,
   addStation,
+  addTrain,
   addEvent,
   getRecentEvents,
   resetDatabase
 };
+
+function addTrain(name, stationId) {
+  // Get Station Coords
+  const result = db.exec('SELECT x, y FROM stations WHERE id = ?', [stationId]);
+  if (!result[0]?.values[0]) return null;
+  const { x, y } = { x: result[0].values[0][0], y: result[0].values[0][1] };
+  
+  db.run('INSERT INTO trains (name, current_station_id, x, y, speed_kmh, status) VALUES (?, ?, ?, ?, ?, ?)', 
+    [name, stationId, x, y, 100 + Math.floor(Math.random() * 60), 'idle'] // Faster trains (100-160 km/h)
+  );
+  saveDatabase();
+  return db.exec('SELECT last_insert_rowid()')[0].values[0][0];
+}
 
 function resetDatabase() {
   if (!db) return;

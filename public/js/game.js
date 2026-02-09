@@ -330,7 +330,7 @@ function renderTrainStatus() {
       if (target && source) {
         const totalDist = Math.sqrt(Math.pow(target.x - source.x, 2) + Math.pow(target.y - source.y, 2)) / PIXELS_PER_KM;
         statusInfo = `<div class="stat"><strong>ROUTE:</strong> ${source.name} → ${target.name}</div>
-                      <div class="stat"><strong>SPEED:</strong> ${train.speed_kmh} KM/H</div>`;
+                      <div class="stat highlight-speed"><strong>⚡ SPEED:</strong> ${train.speed_kmh} KM/H</div>`;
       }
     } else {
       const currentStation = stations.find(s => s.id === train.current_station_id);

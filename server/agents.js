@@ -110,6 +110,9 @@ async function expandNetwork() {
     logger.success('🐅 WORKER: Build Complete.', proposal);
     db.addEvent('AI_WORKER', `🔨 Built ${proposal.name}. ${proposal.reason}`);
     
+    // Auto-spawn trains check
+    checkFleetBalance();
+    
     return { success: true, stationId: newId, ...proposal };
 
   } catch (error) {
@@ -117,6 +120,22 @@ async function expandNetwork() {
     // EXPOSE ERROR TO UI FOR DEBUGGING
     db.addEvent('SYSTEM', `⚠️ Worker Error: ${error.message}`);
     return { success: false, error: error.message };
+  }
+}
+
+// Auto-Spawn Trains Logic (Run after successful build)
+// Simple rule: 1 Train per 3 Stations
+async function checkFleetBalance() {
+  const stations = db.getStations();
+  const trains = db.getTrains();
+  
+  if (stations.length > trains.length * 3) {
+    logger.info('🚄 FLEET MANAGER: Spawning new train to meet demand...');
+    const startStation = stations[Math.floor(Math.random() * stations.length)];
+    const trainName = `Express-${String(trains.length + 1).padStart(2, '0')}`;
+    
+    db.addTrain(trainName, startStation.id);
+    db.addEvent('SYSTEM', `🚄 New Rolling Stock Acquired: ${trainName}`);
   }
 }
 

@@ -13,8 +13,14 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const agents = require('./agents');
+const keepAlive = require('./keep-alive');
 
 // ============== API ROUTES ==============
+
+// Health check / External Ping endpoint
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
 
 // Get full simulation state
 app.get('/api/state', (req, res) => {
@@ -116,6 +122,8 @@ async function start() {
   await db.initDatabase();
   app.listen(PORT, () => {
     console.log(`🚂 AI Railway Simulation running on http://localhost:${PORT}`);
+    // Start the keep-alive service
+    keepAlive.initKeepAlive();
   });
 }
 

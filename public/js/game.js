@@ -645,6 +645,31 @@ function setupNavigationControls() {
   });
 }
 
+function setupHelpModal() {
+  const helpBtn = document.getElementById('help-btn');
+  const modal = document.getElementById('help-modal');
+  const closeBtn = document.querySelector('.modal-close');
+
+  if (helpBtn && modal) {
+    helpBtn.addEventListener('click', () => {
+      modal.classList.add('show');
+    });
+  }
+
+  if (closeBtn && modal) {
+    closeBtn.addEventListener('click', () => {
+      modal.classList.remove('show');
+    });
+
+    // Close on click outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('show');
+      }
+    });
+  }
+}
+
 function adjustZoom(factor) {
   const newZoom = Math.min(Math.max(zoomLevel * factor, 0.1), 5.0);
   applyZoom(newZoom);
@@ -690,6 +715,7 @@ setupEventListeners = function() {
   originalSetupEventListeners();
   setupNavigationControls();
   setupAutoControls();
+  setupHelpModal();
 };
 
 // === VIP OPERATIONS: AUTO DISPATCH ===

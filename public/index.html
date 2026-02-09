@@ -13,9 +13,12 @@
   <header class="header">
     <h1>🚂 AI RAILWAY SIM</h1>
     <div id="utc-clock" class="header-clock">Loading Time...</div>
-    <div class="header-stats">
-      <span id="station-count">Stations: 0</span>
-      <span id="train-count">Trains: 0</span>
+    <div class="header-right">
+      <div class="header-stats">
+        <span id="station-count">Stations: 0</span>
+        <span id="train-count">Trains: 0</span>
+      </div>
+      <button id="help-btn" class="help-btn" title="What is this?">?</button>
     </div>
   </header>
 
@@ -90,6 +93,30 @@
       <div id="train-status" class="train-status"></div>
     </section>
   </main>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>WHAT IS AI RAILWAY SIM?</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>AI Railway Sim</strong> is an autonomous infrastructure simulation where AI agents plan and build a futuristic railway network in real-time.</p>
+        <div class="agent-docs">
+          <div class="agent-info">
+            <span class="agent-tag gemini">COMMANDER (Gemini)</span>
+            <p>Directs the strategic expansion. Decides where the network should go next based on current topology.</p>
+          </div>
+          <div class="agent-info">
+            <span class="agent-tag groq">WORKER (Groq)</span>
+            <p>Executes the commander's orders. Uses Llama 3 to calculate coordinates and build new stations and tracks instantly.</p>
+          </div>
+        </div>
+        <p class="modal-footer-note">Watch the map expand as the agents work together to colonize the digital canvas.</p>
+      </div>
+    </div>
+  </div>
 
   <script src="/js/game.js"></script>
 </body>

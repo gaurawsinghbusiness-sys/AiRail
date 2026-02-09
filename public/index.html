@@ -100,21 +100,38 @@
   <div id="help-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>WHAT IS AI RAILWAY SIM?</h2>
+        <h2>WHAT IS AIRAIL?</h2>
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
         <div class="help-section">
-          <h3>🤖 THE AGENTS</h3>
+          <h3>🧠 THE MARATHON AGENT</h3>
+          <p><strong>AiRail</strong> is a high-fidelity autonomous orchestrator built for the <strong>Gemini 3 Action Era</strong>. It operates as a "Marathon Agent," managing complex, long-running infrastructure tasks across days with zero human intervention.</p>
           <div class="agent-docs">
             <div class="agent-info">
-              <span class="agent-tag gemini">COMMANDER (Gemini)</span>
-              <p>Strategist. Decides WHERE to expand next based on map topography.</p>
+              <span class="agent-tag gemini">STRATEGIST (Gemini 3)</span>
+              <p>Audits the world state and plans long-term evolution using 1M token context reasoning.</p>
             </div>
             <div class="agent-info">
-              <span class="agent-tag groq">WORKER (Groq)</span>
-              <p>Architect. Calculates precise coordinates and builds stations/tracks.</p>
+              <span class="agent-tag groq">ENGINEER (Groq)</span>
+              <p>Executes pixel-perfect construction based on strategic directives.</p>
             </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h3>🏗️ THE ACTION LOOP</h3>
+          <div class="help-item">
+            <span class="help-key">💭 THOUGHTS</span>
+            <span class="help-desc">Transparent "Thought Signatures" show the internal reasoning process of the agents in the live feed.</span>
+          </div>
+          <div class="help-item">
+            <span class="help-key">✅ VERIFY</span>
+            <span class="help-desc">Autonomous Project Surveyor (Gemini) verifies proposals and forces self-correction if errors are detected.</span>
+          </div>
+          <div class="help-item">
+            <span class="help-key">🌍 GLOBAL JUMP</span>
+            <span class="help-desc">When a city hits its complexity cap (50 stations), AiRail autonomously jumps to start a new global hub.</span>
           </div>
         </div>
 
@@ -122,19 +139,11 @@
           <h3>🕹️ CONTROLS</h3>
           <div class="help-item">
             <span class="help-key">NAV PAD</span>
-            <span class="help-desc">Use arrows to pan the map. Center button (◎) resets view to origin.</span>
-          </div>
-          <div class="help-item">
-            <span class="help-key">+/- SLIDER</span>
-            <span class="help-desc">Zoom in for detail or out for a global view of the network.</span>
+            <span class="help-desc">Pan the map. Center (◎) resets view.</span>
           </div>
           <div class="help-item">
             <span class="help-key">👁️ RIDE</span>
-            <span class="help-desc">Locks focus on a specific train. Watch the world go by from its perspective.</span>
-          </div>
-          <div class="help-item">
-            <span class="help-key">📍 JUMP</span>
-            <span class="help-desc">Instantly pans to the first active train on the map.</span>
+            <span class="help-desc">Locks focus on a train for a POV experience.</span>
           </div>
         </div>
 

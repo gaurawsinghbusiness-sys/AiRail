@@ -216,6 +216,9 @@ function renderDynamicElements() {
   
   trains.forEach(train => drawTrain(train, viewport));
   
+  // Real-time Signal Updates
+  updateSignals();
+  
   // UTC-BASED SCHEDULING (Check every hour transition)
   checkUTCSchedule();
 }
@@ -315,7 +318,8 @@ function drawTrain(train, parent) {
 function renderCommsFeed() {
   if (!commsFeed) return;
   commsFeed.innerHTML = '';
-  events.slice().reverse().slice(0, 15).forEach(event => {
+  // User Requested: Limit to 10 notifications
+  events.slice().reverse().slice(0, 10).forEach(event => {
     const entry = document.createElement('div');
     entry.classList.add('comms-entry');
     
@@ -522,25 +526,43 @@ function drawTrack(stationA, stationB, parent) {
   signalBox.setAttribute('fill', '#000');
   
   const light = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  light.id = `signal-${stationA.id}-${stationB.id}`; // Robust Unique ID for Live Updates
   light.setAttribute('cx', midX);
   light.setAttribute('cy', midY); 
   light.setAttribute('r', 5);
   
-  // Real Occupancy Logic: Is a train currently on THIS track segment?
-  // We approximate this by checking if any train's (x,y) is near the midpoint line
-  // OR simpler: check if a train is moving between THESE two specific stations.
-  const isOccupied = trains.some(t => 
-    (t.status === 'moving') && 
-    ((t.current_station_id === stationA.id && t.target_station_id === stationB.id) ||
-     (t.current_station_id === stationB.id && t.target_station_id === stationA.id))
-  );
-
-  light.setAttribute('fill', isOccupied ? '#ff0000' : '#00ff00');
-  if (isOccupied) light.classList.add('signal-red');
+  // Initial state
+  light.setAttribute('fill', '#00ff00');
   
   signalGroup.appendChild(signalBox);
   signalGroup.appendChild(light);
   parent.appendChild(signalGroup);
+}
+
+/**
+ * Robust Signaling System
+ * Updates signal colors every frame based on train occupancy.
+ */
+function updateSignals() {
+  tracks.forEach(track => {
+    const signalId = `signal-${track.station_a_id}-${track.station_b_id}`;
+    const light = document.getElementById(signalId);
+    if (!light) return;
+
+    // A signal is RED if a train is currently moving on this specific track segment
+    const isOccupied = trains.some(t => 
+      (t.status === 'moving') && 
+      ((t.current_station_id === track.station_a_id && t.target_station_id === track.station_b_id) ||
+       (t.current_station_id === track.station_b_id && t.target_station_id === track.station_a_id))
+    );
+
+    const targetColor = isOccupied ? '#ff0000' : '#00ff00';
+    if (light.getAttribute('fill') !== targetColor) {
+      light.setAttribute('fill', targetColor);
+      if (isOccupied) light.classList.add('signal-red');
+      else light.classList.remove('signal-red');
+    }
+  });
 }
 
 let manualScrollTimeout;

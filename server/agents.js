@@ -9,8 +9,8 @@ const logger = require('./logger');
 
 // Initialize AI Clients
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// User requested "Gemini 3 Flash" -> Using 2.0 Flash Exp as closest valid API string
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+// User requested "Gemini 3 Flash" -> Found "gemini-3-flash-preview" in available models
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 

@@ -83,29 +83,28 @@ async function proposeBuild(plan, stations) {
   const lastStation = stations[stations.length - 1];
   const isJump = plan.strategy.includes('JUMP');
   
+  const contextStations = stations.slice(-5).map(s => ({ id: s.id, name: s.name, x: s.x, y: s.y }));
+
   const prompt = `
-    Role: Field Engineer
-    Strategy: "${plan.strategy}"
-    City: "${plan.cityName}"
-    Last Station: ${lastStation.name} at (${lastStation.x}, ${lastStation.y})
+    Role: Lead Railway Engineer (Execution)
+    Strategy: ${plan.strategy}
+    City: ${plan.cityName}
+    Area: ${plan.areaType}
     
-    TASK: Propose ONE new station/track. 
-    If JUMP: distance ~4000px. Else: ~400px.
+    CONTEXT (Last 5 Stations):
+    ${JSON.stringify(contextStations)}
     
-    JSON:
-    {
-      "thoughtSignature": "Engineering considerations for this segment...",
-      "name": "Station Name",
-      "x": 123, "y": 456,
-      "connectToId": ${lastStation.id},
-      "reason": "Technical justification"
-    }
+    ACTION: Propose ONE new station. 
+    - The new station MUST connect to one of the existing IDs: ${contextStations.map(s => s.id).join(', ')}.
+    - Coordinate System: 4px = 1km. 
+    - Choose realistic distances (50-300km from connection point).
+    
+    JSON: { "name": "Station Name", "x": number, "y": number, "connectToId": existing_id, "thoughtSignature": "Brief engineering rationale" }
   `;
 
   const completion = await groq.chat.completions.create({
     messages: [{ role: "user", content: prompt }],
     model: "llama-3.3-70b-versatile",
-    temperature: 0.6,
     response_format: { type: "json_object" }
   });
 
@@ -177,10 +176,19 @@ async function expandNetwork() {
 
     // 4. PHASE: EXECUTE
     const newId = db.addStation(proposal.name, proposal.x, proposal.y);
-    db.addTrack(proposal.connectToId, newId);
     
-    logger.success('� ORCHESTRATOR: Execution Phase Complete.', proposal);
-    db.addEvent('AI_WORKER', `✅ VERIFIED BUILD: ${proposal.name}. ${proposal.reason}`);
+    // SAFETY: If AI hallucinated a connectToId, fallback to the latest station
+    const validStations = db.getStations();
+    let connectionId = proposal.connectToId;
+    if (!validStations.find(s => s.id === connectionId)) {
+      connectionId = validStations[validStations.length - 2].id; // The one before the one we just added
+      logger.warn(`🐅 ORCHESTRATOR: Hallucination detected. Falling back to connection ID: ${connectionId}`);
+    }
+    
+    db.addTrack(connectionId, newId);
+    
+    logger.success(' ORCHESTRATOR: Execution Phase Complete.', proposal);
+    db.addEvent('CONSTRUCTION', `🏗️ Built ${proposal.name} at (${proposal.x}, ${proposal.y}) connected to Hub #${connectionId}`);
     
     checkFleetBalance();
     return { success: true, stationId: newId, ...proposal };

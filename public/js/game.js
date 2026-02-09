@@ -407,7 +407,15 @@ async function simulationTick() {
         body: JSON.stringify({ x: train.x, y: train.y, status: 'idle', current_station_id: target.id })
       });
       await fetchState();
-      stateChanged = true;
+  
+  // Sync Auto-Settings
+  try {
+    const res = await fetch('/api/settings');
+    const { autoEnabled } = await res.json();
+    updateAutoBtnUI(autoEnabled);
+  } catch (err) { console.warn('Could not sync settings'); }
+
+  setInterval(fetchState, 5000);
     } else {
       train.x += (dx / distance) * pixelsPerTick;
       train.y += (dy / distance) * pixelsPerTick;
@@ -478,26 +486,35 @@ function setupAutoControls() {
   const autoBtn = document.getElementById('auto-btn');
   
   if (autoBtn) {
-    autoBtn.addEventListener('click', () => {
-      if (autoExpandInterval) {
-        clearInterval(autoExpandInterval);
-        autoExpandInterval = null;
-        autoBtn.textContent = '🤖 AUTO: OFF';
-        autoBtn.classList.remove('btn-active');
-        autoBtn.classList.add('btn-off');
-      } else {
-        // Trigger every 20 seconds (3 RPM Limit)
-        // Check every minute instead of a 2-hour interval
-        // The checkUTCSchedule logic handles the "Every 2 hours" requirement perfectly
-        const intervalMs = 60000; 
-        autoExpandInterval = setInterval(checkUTCSchedule, intervalMs);
-        checkUTCSchedule(); // Initial check
-        triggerAIExpansion(); // Immediate trigger
-        autoBtn.textContent = '🤖 AUTO: ON';
-        autoBtn.classList.remove('btn-off');
-        autoBtn.classList.add('btn-active');
-      }
+    autoBtn.addEventListener('click', async () => {
+      const isCurrentlyActive = autoBtn.classList.contains('btn-active');
+      const newState = !isCurrentlyActive;
+      
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ autoEnabled: newState })
+        });
+        
+        updateAutoBtnUI(newState);
+      } catch (err) { console.error('Failed to update auto settings:', err); }
     });
+  }
+}
+
+function updateAutoBtnUI(isActive) {
+  const autoBtn = document.getElementById('auto-btn');
+  if (!autoBtn) return;
+  
+  if (isActive) {
+    autoBtn.textContent = '🤖 AUTO: ON';
+    autoBtn.classList.remove('btn-off');
+    autoBtn.classList.add('btn-active');
+  } else {
+    autoBtn.textContent = '🤖 AUTO: OFF';
+    autoBtn.classList.remove('btn-active');
+    autoBtn.classList.add('btn-off');
   }
 }
 

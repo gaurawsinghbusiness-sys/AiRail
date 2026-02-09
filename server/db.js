@@ -65,7 +65,18 @@ async function initDatabase() {
       FOREIGN KEY (station_a_id) REFERENCES stations(id),
       FOREIGN KEY (station_b_id) REFERENCES stations(id)
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
+  
+  // Seed initial settings
+  const hasAuto = db.exec("SELECT COUNT(*) FROM settings WHERE key = 'auto_enabled'")[0]?.values[0][0] || 0;
+  if (hasAuto === 0) {
+    db.run("INSERT INTO settings (key, value) VALUES ('auto_enabled', 'false')");
+  }
   
   // Seed initial data if empty
   const stationCount = db.exec('SELECT COUNT(*) as count FROM stations')[0]?.values[0][0] || 0;
@@ -159,6 +170,17 @@ function getRecentEvents(limit = 20) {
   }));
 }
 
+function setSetting(key, value) {
+  db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, String(value)]);
+  saveDatabase();
+}
+
+function getSetting(key, defaultValue = null) {
+  const result = db.exec('SELECT value FROM settings WHERE key = ?', [key]);
+  if (!result[0]?.values[0]) return defaultValue;
+  return result[0].values[0][0];
+}
+
 module.exports = {
   initDatabase,
   getStations,
@@ -172,7 +194,9 @@ module.exports = {
   addEvent,
   getRecentEvents,
   getTracks,
-  resetDatabase
+  resetDatabase,
+  setSetting,
+  getSetting
 };
 
 function getTracks() {

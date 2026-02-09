@@ -33,26 +33,31 @@ async function getDailyBriefing() {
     return dailyPlan;
   }
 
-  logger.info('🤖 COMMANDER (Gemini): Auditing Network Evolution...');
+  logger.info('� MARATHON AGENT: Beginning Strategic Planning Phase...');
   
   const stations = db.getStations();
   const stationCount = stations.length;
-  
-  // Logic: 50 stations per "City Area"
   const areaNumber = Math.floor(stationCount / 50) + 1;
-  const isTransitioning = (stationCount > 0 && stationCount % 50 === 0);
 
   const prompt = `
-    You are the Senior Infrastructure Manager. You are professional, strategic, and concise.
-    Current Global Stats: ${stationCount} stations across ${areaNumber} urban zones.
+    Role: Senior Infrastructure Manager (Strategist)
+    Track: The Marathon Agent
+    Goal: Plan long-term network growth.
     
-    MANAGEMENT DIRECTIVE:
-    - If station count is < 50, focus on "Urban Consolidation" in the primary area.
-    - If station count is exactly ${stationCount} and it's a multiple of 50, trigger "Global Hub Expansion" (Area ${areaNumber + 1}). 
-    - You must choose a realistic city name for the current zone (e.g., Tokyo, London, Mumbai).
-    - If transitioning, your strategy must include the word "JUMP" and the new city name.
+    Current Stats: ${stationCount} stations, Area ${areaNumber}.
     
-    Return JSON: { "strategy": "...", "cityName": "...", "areaType": "Urban|Global" }
+    TASK:
+    1. Analyze the current network density. 
+    2. Define a strategic directive (Urban Expansion or Inter-City Jump if count >= 50).
+    3. Generate a "Thought Signature" - your internal reasoning for this choice.
+    
+    Format: JSON
+    {
+      "thoughtSignature": "Inner monologue about topography and long-term goals...",
+      "strategy": "Concise strategy statement",
+      "cityName": "Realistic City Name",
+      "areaType": "Urban|Global"
+    }
   `;
 
   try {
@@ -62,13 +67,72 @@ async function getDailyBriefing() {
     dailyPlan = JSON.parse(text);
     lastBriefingTime = now;
     
-    logger.success(`🤖 MANAGER: Area ${areaNumber} Strategy Locked.`, dailyPlan);
-    db.addEvent('COMMANDER', `📜 Management Report: ${dailyPlan.strategy}`);
+    db.addEvent('AI_EXPANSION', `[THOUGHT] ${dailyPlan.thoughtSignature}`);
+    db.addEvent('COMMANDER', `📜 STRATEGY: ${dailyPlan.strategy}`);
     return dailyPlan;
   } catch (error) {
-    logger.error('MANAGER Failed:', error.message);
-    return { strategy: "Maintain existing lines and ensure safety.", cityName: "Central", areaType: "Urban" };
+    logger.error('PLAN Phase Failed:', error.message);
+    return { strategy: "Maintain system stability.", cityName: "Central", thoughtSignature: "Safety-first protocol engaged." };
   }
+}
+
+/**
+ * PHASE 2: PROPOSE (Groq Engineer)
+ */
+async function proposeBuild(plan, stations) {
+  const lastStation = stations[stations.length - 1];
+  const isJump = plan.strategy.includes('JUMP');
+  
+  const prompt = `
+    Role: Field Engineer
+    Strategy: "${plan.strategy}"
+    City: "${plan.cityName}"
+    Last Station: ${lastStation.name} at (${lastStation.x}, ${lastStation.y})
+    
+    TASK: Propose ONE new station/track. 
+    If JUMP: distance ~4000px. Else: ~400px.
+    
+    JSON:
+    {
+      "thoughtSignature": "Engineering considerations for this segment...",
+      "name": "Station Name",
+      "x": 123, "y": 456,
+      "connectToId": ${lastStation.id},
+      "reason": "Technical justification"
+    }
+  `;
+
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: "user", content: prompt }],
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.6,
+    response_format: { type: "json_object" }
+  });
+
+  return JSON.parse(completion.choices[0].message.content);
+}
+
+/**
+ * PHASE 3: VERIFY (Gemini Surveyor)
+ * The "Self-Correction" loop check.
+ */
+async function verifyBuild(proposal, stations) {
+  const prompt = `
+    Role: Project Surveyor (Quality Control)
+    Proposal: ${JSON.stringify(proposal)}
+    Context: Existing ${stations.length} stations.
+    
+    TASK: Verify if the proposed coordinates and name are sensible. 
+    Check for:
+    - Coordinate collisions (too close to others).
+    - Sensible naming.
+    
+    JSON: { "valid": true/false, "feedback": "Why it failed or pass" }
+  `;
+
+  const result = await geminiModel.generateContent(prompt);
+  const text = result.response.text().replace(/```json|```/g, "").trim();
+  return JSON.parse(text);
 }
 /**
  * 2. WORKER AGENT (Groq Llama 3)
@@ -76,56 +140,53 @@ async function getDailyBriefing() {
  */
 async function expandNetwork() {
   const now = Date.now();
-  // USER REQUEST: Strict Throttling (exactly one build per 2h cycle if auto)
-  // We allow manual override, but lastWorkerTime prevents spam.
-  if (now - lastWorkerTime < 60000) { // 1 min safety buffer for manual clicks
-    return { success: false, error: 'Throttled. Infrastructure cooldown in progress.' };
+  if (now - lastWorkerTime < 60000) { 
+    return { success: false, error: 'Marathon Agent is cooling down between cycles.' };
   }
   lastWorkerTime = now;
 
+  // 1. PHASE: PLAN
   const plan = await getDailyBriefing();
-  
+  const stations = db.getStations();
+
   try {
-    logger.info('🐅 WORKER (Groq): Executing build...', plan);
-    
-    const stations = db.getStations();
-    const lastStation = stations[stations.length - 1];
-    const isJump = plan.strategy.includes('JUMP');
-    
-    const prompt = `
-      Role: Lead Field Engineer
-      Current Strategy: "${plan.strategy}"
-      City Context: "${plan.cityName}"
-      Last Coordinates: x:${lastStation.x}, y:${lastStation.y}
-      
-      TASK: 
-      - Build exactly ONE station.
-      - If strategy says "JUMP", the new station should be +/- 4000px away from last station.
-      - Otherwise, keep distance ~400px.
-      
-      Return JSON ONLY:
-      { "name": "${plan.cityName} ${stations.length + 1}", "x": 123, "y": 456, "connectToId": ${lastStation.id}, "reason": "Eng reason" }
-    `;
+    let proposal = null;
+    let verification = { valid: false };
+    let attempts = 0;
+    const maxAttempts = 3;
 
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.6,
-      response_format: { type: "json_object" }
-    });
+    // ORCHESTRATION LOOP: Propose -> Verify -> Correct
+    while (!verification.valid && attempts < maxAttempts) {
+      attempts++;
+      logger.info(`🐅 ORCHESTRATOR: Attempt ${attempts} - Proposing build...`);
+      
+      // 2. PHASE: PROPOSE
+      proposal = await proposeBuild(plan, stations);
+      db.addEvent('AI_EXPANSION', `[THOUGHT] ${proposal.thoughtSignature}`);
+      
+      // 3. PHASE: VERIFY
+      verification = await verifyBuild(proposal, stations);
+      
+      if (!verification.valid) {
+        db.addEvent('SYSTEM', `🔄 SELF-CORRECT: Proposal rejected by Surveyor. Feedback: ${verification.feedback}. Retrying...`);
+        logger.warn(`🐅 ORCHESTRATOR: Verification failed. ${verification.feedback}`);
+      }
+    }
 
-    const proposal = JSON.parse(completion.choices[0].message.content);
+    if (!verification.valid) throw new Error("Could not reach verified consensus after multiple attempts.");
+
+    // 4. PHASE: EXECUTE
     const newId = db.addStation(proposal.name, proposal.x, proposal.y);
-    db.addTrack(proposal.connectToId || lastStation.id, newId);
+    db.addTrack(proposal.connectToId, newId);
     
-    logger.success('🐅 WORKER: Project Delivered.', proposal);
-    db.addEvent('AI_WORKER', `🔨 Built ${proposal.name}. ${proposal.reason}`);
+    logger.success('� ORCHESTRATOR: Execution Phase Complete.', proposal);
+    db.addEvent('AI_WORKER', `✅ VERIFIED BUILD: ${proposal.name}. ${proposal.reason}`);
     
     checkFleetBalance();
     return { success: true, stationId: newId, ...proposal };
   } catch (error) {
-    logger.error('WORKER Failed:', error.message);
-    db.addEvent('SYSTEM', `⚠️ Development Stalled: ${error.message}`);
+    logger.error('ORCHESTRATION Failed:', error.message);
+    db.addEvent('SYSTEM', `⚠️ SYSTEM ERROR: ${error.message}`);
     return { success: false, error: error.message };
   }
 }

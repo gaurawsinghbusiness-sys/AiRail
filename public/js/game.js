@@ -324,6 +324,10 @@ function renderCommsFeed() {
     else if (event.type === 'ARRIVAL') entry.classList.add('arrival');
     else if (event.type === 'AI_EXPANSION') entry.classList.add('ai');
     else entry.classList.add('system');
+
+    if (event.message.includes('[THOUGHT]')) {
+      entry.classList.add('thought');
+    }
     
     const time = new Date(event.timestamp).toLocaleTimeString();
     entry.innerHTML = `

@@ -308,6 +308,19 @@ body {
   gap: 0.1rem;
 }
 
+.comms-entry.thought {
+  border-left: 4px solid #aaa;
+  background: #fcfcfc;
+  color: #666;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.comms-message {
+  font-weight: 500;
+  word-break: break-word;
+}
+
 .log-label {
   font-weight: 800;
   text-transform: uppercase;

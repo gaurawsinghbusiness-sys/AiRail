@@ -2,6 +2,7 @@
  * AI Railway Simulation - Main Server
  * Express server with API routes for simulation state and AI expansion.
  */
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const db = require('./db');

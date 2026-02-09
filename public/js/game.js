@@ -216,9 +216,6 @@ function renderDynamicElements() {
   
   trains.forEach(train => drawTrain(train, viewport));
   
-  // Real-time Signal Updates
-  updateSignals();
-  
   // UTC-BASED SCHEDULING (Check every hour transition)
   checkUTCSchedule();
 }
@@ -513,30 +510,33 @@ function drawTrack(stationA, stationB, parent) {
   line.setAttribute('stroke-dasharray', '8 8');
   parent.appendChild(line);
 
-  // SIGNALING SYSTEM: Real-time Block Occupancy
-  const midX = (stationA.x + stationB.x) / 2;
-  const midY = (stationA.y + stationB.y) / 2;
+  // INTELLIGENT SIGNALING: Only show signals at junctions (3+ connections)
+  const connA = tracks.filter(t => t.station_a_id === stationA.id || t.station_b_id === stationA.id).length;
+  const connB = tracks.filter(t => t.station_a_id === stationB.id || t.station_b_id === stationB.id).length;
   
-  const signalGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  const signalBox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  signalBox.setAttribute('x', midX - 6);
-  signalBox.setAttribute('y', midY - 12);
-  signalBox.setAttribute('width', 12);
-  signalBox.setAttribute('height', 24);
-  signalBox.setAttribute('fill', '#000');
-  
-  const light = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  light.id = `signal-${stationA.id}-${stationB.id}`; // Robust Unique ID for Live Updates
-  light.setAttribute('cx', midX);
-  light.setAttribute('cy', midY); 
-  light.setAttribute('r', 5);
-  
-  // Initial state
-  light.setAttribute('fill', '#00ff00');
-  
-  signalGroup.appendChild(signalBox);
-  signalGroup.appendChild(light);
-  parent.appendChild(signalGroup);
+  if (connA > 2 || connB > 2) {
+    const midX = (stationA.x + stationB.x) / 2;
+    const midY = (stationA.y + stationB.y) / 2;
+    
+    const signalGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const signalBase = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    signalBase.setAttribute('x', midX - 6);
+    signalBase.setAttribute('y', midY - 12);
+    signalBase.setAttribute('width', 12);
+    signalBase.setAttribute('height', 24);
+    signalBase.setAttribute('fill', '#000');
+    
+    const light = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    light.id = `signal-${stationA.id}-${stationB.id}`; 
+    light.setAttribute('cx', midX);
+    light.setAttribute('cy', midY); 
+    light.setAttribute('r', 5);
+    light.setAttribute('fill', '#00ff00');
+    
+    signalGroup.appendChild(signalBase);
+    signalGroup.appendChild(light);
+    parent.appendChild(signalGroup);
+  }
 }
 
 /**

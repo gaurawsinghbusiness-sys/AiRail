@@ -9,7 +9,8 @@ const logger = require('./logger');
 
 // Initialize AI Clients
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// User requested "Gemini 3 Flash" -> Using 2.0 Flash Exp as closest valid API string
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -95,7 +96,7 @@ async function expandNetwork() {
   try {
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama3-70b-8192",
+      model: "llama-3.3-70b-versatile", // Updated from decommissioned llama3-70b-8192
       temperature: 0.7,
       response_format: { type: "json_object" }
     });

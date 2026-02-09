@@ -57,6 +57,14 @@ async function initDatabase() {
       message TEXT NOT NULL,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS tracks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      station_a_id INTEGER,
+      station_b_id INTEGER,
+      FOREIGN KEY (station_a_id) REFERENCES stations(id),
+      FOREIGN KEY (station_b_id) REFERENCES stations(id)
+    );
   `);
   
   // Seed initial data if empty
@@ -73,6 +81,9 @@ async function initDatabase() {
     // Initial event
     db.run('INSERT INTO events (type, message) VALUES (?, ?)', ['SYSTEM', 'Railway simulation initialized. Two stations online.']);
     
+    // Initial track
+    db.run('INSERT INTO tracks (station_a_id, station_b_id) VALUES (?, ?)', [1, 2]);
+
     saveDatabase();
   }
   
@@ -156,11 +167,26 @@ module.exports = {
   getStation,
   updateTrain,
   addStation,
+  addTrack,
   addTrain,
   addEvent,
   getRecentEvents,
+  getTracks,
   resetDatabase
 };
+
+function getTracks() {
+  const result = db.exec('SELECT * FROM tracks');
+  if (!result[0]) return [];
+  return result[0].values.map(row => ({
+    id: row[0], station_a_id: row[1], station_b_id: row[2]
+  }));
+}
+
+function addTrack(a, b) {
+  db.run('INSERT INTO tracks (station_a_id, station_b_id) VALUES (?, ?)', [a, b]);
+  saveDatabase();
+}
 
 function addTrain(name, stationId) {
   // Get Station Coords
@@ -190,6 +216,7 @@ function resetDatabase() {
   // Re-seed with initial data - IDs will now regenerate starting at 1
   db.run('INSERT INTO stations (name, x, y) VALUES (?, ?, ?)', ['Central Junction', 50, 300]);
   db.run('INSERT INTO stations (name, x, y) VALUES (?, ?, ?)', ['Northfield Terminal', 650, 300]);
+  db.run('INSERT INTO tracks (station_a_id, station_b_id) VALUES (?, ?)', [1, 2]);
   db.run('INSERT INTO trains (name, current_station_id, x, y, speed_kmh, status) VALUES (?, ?, ?, ?, ?, ?)', ['Express-01', 1, 50, 300, 80, 'idle']);
   db.run('INSERT INTO events (type, message) VALUES (?, ?)', ['SYSTEM', 'Simulation reset. Systems online.']);
   

@@ -6,6 +6,7 @@
 // State
 let stations = [];
 let trains = [];
+let tracks = []; // New: Explicit tracks for branching
 let events = [];
 let simulationInterval = null;
 
@@ -170,6 +171,7 @@ async function fetchState() {
     const data = await res.json();
     stations = data.stations;
     trains = data.trains;
+    tracks = data.tracks; // New: Fetch tracks
     events = data.events;
     updateHeaderStats();
     renderCommsFeed();
@@ -189,9 +191,14 @@ function render() {
   viewport.id = 'viewport';
   canvas.appendChild(viewport);
   
-  for (let i = 0; i < stations.length - 1; i++) {
-    drawTrack(stations[i], stations[i + 1], viewport);
-  }
+  // Render explicit tracks (Branching Support)
+  tracks.forEach(track => {
+    const stationA = stations.find(s => s.id === track.station_a_id);
+    const stationB = stations.find(s => s.id === track.station_b_id);
+    if (stationA && stationB) {
+      drawTrack(stationA, stationB, viewport);
+    }
+  });
   
   stations.forEach(station => drawStation(station, viewport));
   
@@ -549,7 +556,7 @@ function drawTrack(stationA, stationB, parent) {
   line.setAttribute('stroke-dasharray', '8 8');
   parent.appendChild(line);
 
-  // Signal Light (Midpoint)
+  // SIGNALING SYSTEM: Real-time Block Occupancy
   const midX = (stationA.x + stationB.x) / 2;
   const midY = (stationA.y + stationB.y) / 2;
   
@@ -559,17 +566,24 @@ function drawTrack(stationA, stationB, parent) {
   signalBox.setAttribute('y', midY - 12);
   signalBox.setAttribute('width', 12);
   signalBox.setAttribute('height', 24);
-  signalBox.setAttribute('fill', '#333');
+  signalBox.setAttribute('fill', '#000');
   
   const light = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   light.setAttribute('cx', midX);
-  light.setAttribute('cy', midY); // Default Green/Red logic would go here
-  light.setAttribute('r', 4);
+  light.setAttribute('cy', midY); 
+  light.setAttribute('r', 5);
   
-  // Simple Mock Logic: Randomly Red/Green for visual flair (since we don't have real block logic yet)
-  // In a real system, this would check if a train is on the segment
-  const isSegmentOccupied = Math.random() > 0.7; 
-  light.setAttribute('fill', isSegmentOccupied ? '#ff0000' : '#00ff00');
+  // Real Occupancy Logic: Is a train currently on THIS track segment?
+  // We approximate this by checking if any train's (x,y) is near the midpoint line
+  // OR simpler: check if a train is moving between THESE two specific stations.
+  const isOccupied = trains.some(t => 
+    (t.status === 'moving') && 
+    ((t.current_station_id === stationA.id && t.target_station_id === stationB.id) ||
+     (t.current_station_id === stationB.id && t.target_station_id === stationA.id))
+  );
+
+  light.setAttribute('fill', isOccupied ? '#ff0000' : '#00ff00');
+  if (isOccupied) light.classList.add('signal-red');
   
   signalGroup.appendChild(signalBox);
   signalGroup.appendChild(light);

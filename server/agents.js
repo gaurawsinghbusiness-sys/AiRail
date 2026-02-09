@@ -74,29 +74,31 @@ async function expandNetwork() {
   // 1. Get Strategy
   const plan = await getDailyBriefing();
   
-  // 2. Execute Step
-  logger.info('🐅 WORKER (Groq): Executing build task...', plan);
-  
-  const stations = db.getStations();
-  const lastStation = stations[stations.length - 1];
-  
-  const prompt = `
-    Role: Railway Engineer (Worker)
-    Strategy: "${plan.strategy}"
-    Last Station: ${lastStation.name} (${lastStation.x}, ${lastStation.y})
-    Canvas: 800x600 px.
-    
-    Task: Create 1 new station connected to the last one.
-    Constraint: Keep Y between 50 and 550. X must be > lastStation.x + 200. Distance ~300-500px.
-    
-    Return JSON ONLY:
-    { "name": "Station Name", "x": 123, "y": 456, "reason": "Tactical reason" }
-  `;
-
   try {
+    // 2. Execute Step
+    logger.info('🐅 WORKER (Groq): Executing build task...', plan);
+    
+    const stations = db.getStations();
+    const lastStation = stations[stations.length - 1];
+    
+    const prompt = `
+      Role: Railway Engineer (Worker)
+      Strategy: "${plan.strategy}"
+      Current Stations: ${JSON.stringify(stations.map(s => ({ id: s.id, name: s.name, x: s.x, y: s.y })))}
+      Canvas: 800x600 px.
+      
+      Task: Create 1 new station. 
+      Constraint: 
+      - Keep Y between 50 and 550. X must be > lastStation.x + 200. Distance ~300-500px.
+      - Pick an existing station ID to connect this new station to (usually the last one, but can branch from others).
+      
+      Return JSON ONLY:
+      { "name": "Station Name", "x": 123, "y": 456, "connectToId": 1, "reason": "Tactical reason" }
+    `;
+
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile", // Updated from decommissioned llama3-70b-8192
+      model: "llama-3.3-70b-versatile",
       temperature: 0.7,
       response_format: { type: "json_object" }
     });
@@ -104,11 +106,16 @@ async function expandNetwork() {
     const content = completion.choices[0].message.content;
     const proposal = JSON.parse(content);
     
-    // Safety Check: Append Only (Logic handled by DB insert, ID is auto-increment)
+    // Safety check for connectToId
+    const connectId = proposal.connectToId || lastStation.id;
+    
+    // 1. Add Station
     const newId = db.addStation(proposal.name, proposal.x, proposal.y);
+    // 2. Add Track (Branching!)
+    db.addTrack(connectId, newId);
     
     logger.success('🐅 WORKER: Build Complete.', proposal);
-    db.addEvent('AI_WORKER', `🔨 Built ${proposal.name}. ${proposal.reason}`);
+    db.addEvent('AI_WORKER', `🔨 Built ${proposal.name} (Linked to ${connectId}). ${proposal.reason}`);
     
     // Auto-spawn trains check
     checkFleetBalance();

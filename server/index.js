@@ -21,8 +21,9 @@ app.get('/api/state', (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   const stations = db.getStations();
   const trains = db.getTrains();
+  const tracks = db.getTracks();
   const events = db.getRecentEvents(30);
-  res.json({ stations, trains, events });
+  res.json({ stations, trains, tracks, events });
 });
 
 // Dispatch a train to a station

@@ -9,6 +9,7 @@ let trains = [];
 let tracks = []; // New: Explicit tracks for branching
 let events = [];
 let simulationInterval = null;
+let followingTrainId = null;
 
 // Infinite Canvas State
 let viewX = 0;
@@ -279,18 +280,6 @@ function drawStation(station, parent) {
   parent.appendChild(g);
 }
 
-function drawTrack(stationA, stationB, parent) {
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.classList.add('track-line');
-  line.setAttribute('x1', stationA.x);
-  line.setAttribute('y1', stationA.y);
-  line.setAttribute('x2', stationB.x);
-  line.setAttribute('y2', stationB.y);
-  line.setAttribute('stroke', '#000');
-  line.setAttribute('stroke-width', '4');
-  line.setAttribute('stroke-dasharray', '8 8');
-  parent.appendChild(line);
-}
 
 function drawTrain(train, parent) {
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -317,7 +306,7 @@ function drawTrain(train, parent) {
   g.appendChild(icon);
   parent.appendChild(g);
 
-  if (train.status === 'moving' && !window.manualScrolling) {
+  if (followingTrainId === train.id && !window.manualScrolling) {
     targetViewX = -train.x + (container.clientWidth / 2) / zoomLevel;
     targetViewY = -train.y + (container.clientHeight / 2) / zoomLevel;
   }
@@ -371,44 +360,8 @@ function renderTrainStatus() {
     rideBtn.innerHTML = '👁️ RIDE';
     rideBtn.onclick = () => rideTrain(train.id);
     card.appendChild(rideBtn);
-    
     trainStatusEl.appendChild(card);
   });
-}
-
-// === VIP OPERATIONS: AUTO DISPATCH ===
-function startAutoDispatch() {
-  setInterval(() => {
-    // Find IDLE trains
-    trains.forEach(t => {
-      if (t.status === 'idle') {
-        // Find a valid target (any other station)
-        const possibleTargets = stations.filter(s => s.id !== t.current_station_id);
-        if (possibleTargets.length > 0) {
-          const randomTarget = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
-          dispatchTrainTo(randomTarget.id);
-        }
-      }
-    });
-  }, 5000); // Check every 5 seconds
-}
-
-// === VIP CAMERA: RIDE TRAIN ===
-let followingTrainId = null;
-
-function rideTrain(id) {
-  followingTrainId = id;
-  const train = trains.find(t => t.id === id);
-  if (train) {
-    window.manualScrolling = false; // Force auto-follow
-    // Immediate jump
-    viewX = -train.x + (container.clientWidth / 2) / zoomLevel;
-    viewY = -train.y + (container.clientHeight / 2) / zoomLevel;
-    targetViewX = viewX;
-    targetViewY = viewY;
-    zoomLevel = 1.5; // Zoom in for the ride
-    updateZoomSlider();
-  }
 }
 
 function updateHeaderStats() {

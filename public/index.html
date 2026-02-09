@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Railway Simulation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>🚂 AI RAILWAY SIM</h1>
+    <div id="utc-clock" class="header-clock">Loading Time...</div>
+    <div class="header-stats">
+      <span id="station-count">Stations: 0</span>
+      <span id="train-count">Trains: 0</span>
+    </div>
+  </header>
+
+  <main class="main-grid">
+    <!-- Simulation Canvas -->
+    <section class="panel simulation-panel">
+      <div class="panel-header">
+        <h2>SIMULATION MAP</h2>
+        <div class="panel-controls">
+          <button id="auto-btn" class="btn btn-off" title="Toggle Autonomous Expansion (3 RPM)">🤖 AUTO: OFF</button>
+          <button id="expand-btn" class="btn btn-primary" style="display:none;">MANUAL EXPAND</button>
+        </div>
+      </div>
+      <div class="canvas-container">
+        <div class="map-overlay">
+          <div class="mission-info">
+            <div>LOC: <span id="view-coords">0, 0</span></div>
+            <div>ZM: <span id="view-zoom">1.0x</span></div>
+          </div>
+          
+          <!-- Explicit Navigation Controls -->
+          <div class="nav-controls">
+            <div class="pan-grid">
+              <button id="pan-up" class="nav-btn" title="Pan Up">▲</button>
+              <div class="pan-mid">
+                <button id="pan-left" class="nav-btn" title="Pan Left">◀</button>
+                <button id="pan-reset" class="nav-btn" title="Reset View">⊙</button>
+                <button id="pan-right" class="nav-btn" title="Pan Right">▶</button>
+              </div>
+              <button id="pan-down" class="nav-btn" title="Pan Down">▼</button>
+            </div>
+            
+            <div class="zoom-controls">
+              <button id="zoom-in" class="nav-btn" title="Zoom In">➕</button>
+              <input type="range" id="zoom-slider" min="0.1" max="5.0" step="0.1" value="0.4">
+              <button id="zoom-out" class="nav-btn" title="Zoom Out">➖</button>
+            </div>
+          </div>
+        </div>
+        <svg id="simulation-canvas"></svg>
+      </div>
+
+    </section>
+
+    <!-- Comms Feed -->
+    <section class="panel comms-panel">
+      <div class="panel-header">
+        <h2>COMMS FEED</h2>
+        <span class="live-indicator">● LIVE</span>
+      </div>
+      <div id="comms-feed" class="comms-feed"></div>
+    </section>
+
+    <!-- Train Status -->
+    <section class="panel status-panel">
+      <div class="panel-header">
+        <h2>TRAIN STATUS</h2>
+      </div>
+      <div id="train-status" class="train-status"></div>
+    </section>
+  </main>
+
+  <script src="/js/game.js"></script>
+</body>
+</html>

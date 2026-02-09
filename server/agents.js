@@ -30,18 +30,29 @@ let lastWorkerTime = 0;
 async function getDailyBriefing() {
   const now = Date.now();
   if (dailyPlan && (now - lastBriefingTime < BRIEFING_INTERVAL)) {
-    return dailyPlan; // Stick to the plan
+    return dailyPlan;
   }
 
-  logger.info('🤖 COMMANDER (Gemini): Generating Daily Briefing...');
+  logger.info('🤖 COMMANDER (Gemini): Auditing Network Evolution...');
   
   const stations = db.getStations();
+  const stationCount = stations.length;
+  
+  // Logic: 50 stations per "City Area"
+  const areaNumber = Math.floor(stationCount / 50) + 1;
+  const isTransitioning = (stationCount > 0 && stationCount % 50 === 0);
+
   const prompt = `
-    You are the Strategic Commander for a Railway Network.
-    Current Stations: ${stations.length}.
+    You are the Senior Infrastructure Manager. You are professional, strategic, and concise.
+    Current Global Stats: ${stationCount} stations across ${areaNumber} urban zones.
     
-    Generate a 1-sentence strategic goal for today's expansion (e.g., "Expand north to connect the industrial sector" or "Densify the central loop").
-    Return JSON: { "strategy": "..." }
+    MANAGEMENT DIRECTIVE:
+    - If station count is < 50, focus on "Urban Consolidation" in the primary area.
+    - If station count is exactly ${stationCount} and it's a multiple of 50, trigger "Global Hub Expansion" (Area ${areaNumber + 1}). 
+    - You must choose a realistic city name for the current zone (e.g., Tokyo, London, Mumbai).
+    - If transitioning, your strategy must include the word "JUMP" and the new city name.
+    
+    Return JSON: { "strategy": "...", "cityName": "...", "areaType": "Urban|Global" }
   `;
 
   try {
@@ -51,81 +62,70 @@ async function getDailyBriefing() {
     dailyPlan = JSON.parse(text);
     lastBriefingTime = now;
     
-    logger.success('🤖 COMMANDER: Plan Locked.', dailyPlan);
-    db.addEvent('COMMANDER', `📜 Daily Strategy: ${dailyPlan.strategy}`);
+    logger.success(`🤖 MANAGER: Area ${areaNumber} Strategy Locked.`, dailyPlan);
+    db.addEvent('COMMANDER', `📜 Management Report: ${dailyPlan.strategy}`);
     return dailyPlan;
   } catch (error) {
-    logger.error('COMMANDER Failed:', error.message);
-    return { strategy: "Maintain and reliability focus." }; // Fallback
+    logger.error('MANAGER Failed:', error.message);
+    return { strategy: "Maintain existing lines and ensure safety.", cityName: "Central", areaType: "Urban" };
   }
 }
-
 /**
  * 2. WORKER AGENT (Groq Llama 3)
  * Executes the plan by building specific stations.
  */
 async function expandNetwork() {
   const now = Date.now();
-  if (now - lastWorkerTime < WORKER_INTERVAL_MS) {
-    return { success: false, error: 'Worker cooling down...' };
+  // USER REQUEST: Strict Throttling (exactly one build per 2h cycle if auto)
+  // We allow manual override, but lastWorkerTime prevents spam.
+  if (now - lastWorkerTime < 60000) { // 1 min safety buffer for manual clicks
+    return { success: false, error: 'Throttled. Infrastructure cooldown in progress.' };
   }
   lastWorkerTime = now;
 
-  // 1. Get Strategy
   const plan = await getDailyBriefing();
   
   try {
-    // 2. Execute Step
-    logger.info('🐅 WORKER (Groq): Executing build task...', plan);
+    logger.info('🐅 WORKER (Groq): Executing build...', plan);
     
     const stations = db.getStations();
     const lastStation = stations[stations.length - 1];
+    const isJump = plan.strategy.includes('JUMP');
     
     const prompt = `
-      Role: Railway Engineer (Worker)
-      Strategy: "${plan.strategy}"
-      Current Stations: ${JSON.stringify(stations.map(s => ({ id: s.id, name: s.name, x: s.x, y: s.y })))}
-      Canvas: 800x600 px.
+      Role: Lead Field Engineer
+      Current Strategy: "${plan.strategy}"
+      City Context: "${plan.cityName}"
+      Last Coordinates: x:${lastStation.x}, y:${lastStation.y}
       
-      Task: Create 1 new station. 
-      Constraint: 
-      - Keep Y between 50 and 550. X must be > lastStation.x + 200. Distance ~300-500px.
-      - Pick an existing station ID to connect this new station to (usually the last one, but can branch from others).
+      TASK: 
+      - Build exactly ONE station.
+      - If strategy says "JUMP", the new station should be +/- 4000px away from last station.
+      - Otherwise, keep distance ~400px.
       
       Return JSON ONLY:
-      { "name": "Station Name", "x": 123, "y": 456, "connectToId": 1, "reason": "Tactical reason" }
+      { "name": "${plan.cityName} ${stations.length + 1}", "x": 123, "y": 456, "connectToId": ${lastStation.id}, "reason": "Eng reason" }
     `;
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.3-70b-versatile",
-      temperature: 0.7,
+      temperature: 0.6,
       response_format: { type: "json_object" }
     });
 
-    const content = completion.choices[0].message.content;
-    const proposal = JSON.parse(content);
-    
-    // Safety check for connectToId
-    const connectId = proposal.connectToId || lastStation.id;
-    
-    // 1. Add Station
+    const proposal = JSON.parse(completion.choices[0].message.content);
     const newId = db.addStation(proposal.name, proposal.x, proposal.y);
-    // 2. Add Track (Branching!)
-    db.addTrack(connectId, newId);
+    db.addTrack(proposal.connectToId || lastStation.id, newId);
     
-    logger.success('🐅 WORKER: Build Complete.', proposal);
-    db.addEvent('AI_WORKER', `🔨 Built ${proposal.name} (Linked to ${connectId}). ${proposal.reason}`);
+    logger.success('🐅 WORKER: Project Delivered.', proposal);
+    db.addEvent('AI_WORKER', `🔨 Built ${proposal.name}. ${proposal.reason}`);
     
-    // Auto-spawn trains check
     checkFleetBalance();
-    
     return { success: true, stationId: newId, ...proposal };
-
   } catch (error) {
     logger.error('WORKER Failed:', error.message);
-    // EXPOSE ERROR TO UI FOR DEBUGGING
-    db.addEvent('SYSTEM', `⚠️ Worker Error: ${error.message}`);
+    db.addEvent('SYSTEM', `⚠️ Development Stalled: ${error.message}`);
     return { success: false, error: error.message };
   }
 }

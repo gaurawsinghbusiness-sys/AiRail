@@ -699,15 +699,24 @@ function startAutoDispatch() {
     // Find IDLE trains
     trains.forEach(t => {
       if (t.status === 'idle') {
-        // Find a valid target (any other station)
-        const possibleTargets = stations.filter(s => s.id !== t.current_station_id);
-        if (possibleTargets.length > 0) {
-          const randomTarget = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
-          dispatchTrainTo(randomTarget.id);
+        // More robust logic: Find all connected stations via tracks
+        const connections = tracks.filter(tr => tr.station_a_id === t.current_station_id || tr.station_b_id === t.current_station_id);
+        const neighborIds = connections.map(tr => tr.station_a_id === t.current_station_id ? tr.station_b_id : tr.station_a_id);
+        
+        if (neighborIds.length > 0) {
+          // Pick a random neighbor to move to
+          const randomTargetId = neighborIds[Math.floor(Math.random() * neighborIds.length)];
+          dispatchTrainTo(randomTargetId);
+        } else {
+          // Fallback if no specific tracks (shouldn't happen with new logic but safe)
+          const stationsOther = stations.filter(s => s.id !== t.current_station_id);
+          if (stationsOther.length > 0) {
+            dispatchTrainTo(stationsOther[Math.floor(Math.random() * stationsOther.length)].id);
+          }
         }
       }
     });
-  }, 5000); // Check every 5 seconds
+  }, 10000); // Check every 10 seconds for more lifelike movement
 }
 
 // === VIP CAMERA: RIDE TRAIN ===

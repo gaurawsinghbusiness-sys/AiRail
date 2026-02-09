@@ -23,7 +23,7 @@ let targetViewY = 0;
 
 // Constants - REALISTIC PHYSICS
 const PIXELS_PER_KM = 4;
-const SIMULATION_SPEED = 60;
+const SIMULATION_SPEED = 120;
 const TICK_RATE = 50; 
 
 // DOM Elements

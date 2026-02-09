@@ -49,6 +49,7 @@ async function init() {
   targetViewY = viewY;
   
   startSimulation();
+  startAutoDispatch(); // New: TRAINS MOVE TOO
   setupEventListeners();
   
   // Start Clock
@@ -157,6 +158,7 @@ function animate() {
   }
   
   renderDynamicElements();
+  renderTrainStatus(); // Real-time UI updates (Speed/Status)
   requestAnimationFrame(animate);
 }
 
@@ -205,6 +207,24 @@ function renderDynamicElements() {
   existingTrains.forEach(t => t.remove());
   
   trains.forEach(train => drawTrain(train, viewport));
+  
+  // UTC-BASED SCHEDULING (Check every hour transition)
+  checkUTCSchedule();
+}
+
+let lastExpansionHour = -1;
+function checkUTCSchedule() {
+  if (!autoExpandInterval) return; // Only if AUTO is ON
+  
+  const now = new Date();
+  const currentHour = now.getUTCHours();
+  
+  // Trigger on EVEN hours (0, 2, 4...) and only once per hour
+  if (currentHour % 2 === 0 && currentHour !== lastExpansionHour) {
+    console.log(`🕒 UTC SCHEDULER: Triggering expansion for Hour ${currentHour}:00`);
+    lastExpansionHour = currentHour;
+    triggerAIExpansion();
+  }
 }
 
 function drawStation(station, parent) {
@@ -337,8 +357,51 @@ function renderTrainStatus() {
       statusInfo = `<div class="stat"><strong>STATUS:</strong> IDLE at ${currentStation?.name || 'Unknown'}</div>`;
     }
     card.innerHTML = `<h3>${train.name}</h3>${statusInfo}`;
+    
+    // VIP FEATURE: Ride Train Button
+    const rideBtn = document.createElement('button');
+    rideBtn.className = 'ride-btn';
+    rideBtn.innerHTML = '👁️ RIDE';
+    rideBtn.onclick = () => rideTrain(train.id);
+    card.appendChild(rideBtn);
+    
     trainStatusEl.appendChild(card);
   });
+}
+
+// === VIP OPERATIONS: AUTO DISPATCH ===
+function startAutoDispatch() {
+  setInterval(() => {
+    // Find IDLE trains
+    trains.forEach(t => {
+      if (t.status === 'idle') {
+        // Find a valid target (any other station)
+        const possibleTargets = stations.filter(s => s.id !== t.current_station_id);
+        if (possibleTargets.length > 0) {
+          const randomTarget = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
+          dispatchTrainTo(randomTarget.id);
+        }
+      }
+    });
+  }, 5000); // Check every 5 seconds
+}
+
+// === VIP CAMERA: RIDE TRAIN ===
+let followingTrainId = null;
+
+function rideTrain(id) {
+  followingTrainId = id;
+  const train = trains.find(t => t.id === id);
+  if (train) {
+    window.manualScrolling = false; // Force auto-follow
+    // Immediate jump
+    viewX = -train.x + (container.clientWidth / 2) / zoomLevel;
+    viewY = -train.y + (container.clientHeight / 2) / zoomLevel;
+    targetViewX = viewX;
+    targetViewY = viewY;
+    zoomLevel = 1.5; // Zoom in for the ride
+    updateZoomSlider();
+  }
 }
 
 function updateHeaderStats() {
@@ -459,8 +522,11 @@ function setupAutoControls() {
         autoBtn.classList.add('btn-off');
       } else {
         // Trigger every 20 seconds (3 RPM Limit)
-        const intervalMs = 20000; 
-        autoExpandInterval = setInterval(triggerAIExpansion, intervalMs);
+        // Check every minute instead of a 2-hour interval
+        // The checkUTCSchedule logic handles the "Every 2 hours" requirement perfectly
+        const intervalMs = 60000; 
+        autoExpandInterval = setInterval(checkUTCSchedule, intervalMs);
+        checkUTCSchedule(); // Initial check
         triggerAIExpansion(); // Immediate trigger
         autoBtn.textContent = '🤖 AUTO: ON';
         autoBtn.classList.remove('btn-off');
@@ -611,6 +677,41 @@ setupEventListeners = function() {
   setupNavigationControls();
   setupAutoControls();
 };
+
+// === VIP OPERATIONS: AUTO DISPATCH ===
+function startAutoDispatch() {
+  setInterval(() => {
+    // Find IDLE trains
+    trains.forEach(t => {
+      if (t.status === 'idle') {
+        // Find a valid target (any other station)
+        const possibleTargets = stations.filter(s => s.id !== t.current_station_id);
+        if (possibleTargets.length > 0) {
+          const randomTarget = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
+          dispatchTrainTo(randomTarget.id);
+        }
+      }
+    });
+  }, 5000); // Check every 5 seconds
+}
+
+// === VIP CAMERA: RIDE TRAIN ===
+
+
+function rideTrain(id) {
+  followingTrainId = id;
+  const train = trains.find(t => t.id === id);
+  if (train) {
+    window.manualScrolling = false; // Force auto-follow
+    // Immediate jump
+    viewX = -train.x + (container.clientWidth / 2) / zoomLevel;
+    viewY = -train.y + (container.clientHeight / 2) / zoomLevel;
+    targetViewX = viewX;
+    targetViewY = viewY;
+    zoomLevel = 1.5; // Zoom in for the ride
+    updateZoomSlider();
+  }
+}
 
 function renderLogBook() {
   if (!logYesterdayEl || !logTodayEl) return;

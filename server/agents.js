@@ -17,7 +17,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 // State
 let dailyPlan = null;
 let lastBriefingTime = 0;
-const BRIEFING_INTERVAL = 24 * 60 * 60 * 1000; // 24 Hours (Real-time) - Can be accelerated
+const BRIEFING_INTERVAL = 2 * 60 * 60 * 1000; // 2 Hours (Real-time) - User Request: "12:00 am, 2:00 am"
 
 // Rate Limiting (Groq is fast, but let's keep it sane)
 const WORKER_INTERVAL_MS = 10000; // 10s per build

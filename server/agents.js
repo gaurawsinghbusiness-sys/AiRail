@@ -113,6 +113,8 @@ async function expandNetwork() {
 
   } catch (error) {
     logger.error('WORKER Failed:', error.message);
+    // EXPOSE ERROR TO UI FOR DEBUGGING
+    db.addEvent('SYSTEM', `⚠️ Worker Error: ${error.message}`);
     return fallbackExpansion();
   }
 }

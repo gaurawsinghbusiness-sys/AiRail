@@ -44,17 +44,24 @@ const logTodayEl = document.getElementById('log-today');
 async function init() {
   await fetchState();
   
-  // Set initial view to center on the action (approx middle of 0,0 map)
+  // Sync Auto-Settings from Server
+  try {
+    const res = await fetch('/api/settings');
+    const { autoEnabled } = await res.json();
+    updateAutoBtnUI(autoEnabled);
+  } catch (err) { console.warn('Could not sync settings'); }
+
+  // Set initial view
   viewX = 350; 
   viewY = 100;
   targetViewX = viewX;
   targetViewY = viewY;
   
   startSimulation();
-  startAutoDispatch(); // New: TRAINS MOVE TOO
+  startAutoDispatch();
   setupEventListeners();
   
-  // Start Clock
+  setInterval(fetchState, 5000);
   setInterval(updateUTCClock, 1000);
   updateUTCClock();
   
@@ -407,15 +414,6 @@ async function simulationTick() {
         body: JSON.stringify({ x: train.x, y: train.y, status: 'idle', current_station_id: target.id })
       });
       await fetchState();
-  
-  // Sync Auto-Settings
-  try {
-    const res = await fetch('/api/settings');
-    const { autoEnabled } = await res.json();
-    updateAutoBtnUI(autoEnabled);
-  } catch (err) { console.warn('Could not sync settings'); }
-
-  setInterval(fetchState, 5000);
     } else {
       train.x += (dx / distance) * pixelsPerTick;
       train.y += (dy / distance) * pixelsPerTick;

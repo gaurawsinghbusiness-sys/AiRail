@@ -153,17 +153,20 @@ function startServerSideExpansion() {
   expansionTimer = setInterval(async () => {
     const now = new Date();
     const isEvenHour = now.getUTCHours() % 2 === 0;
-    const isBeginningOfHour = now.getUTCMinutes() < 2; // Small window to trigger
+    const isBeginningOfHour = now.getUTCMinutes() < 10; // 10 minute window
     
-    // Also check if we've already run this hour to prevent double-builds
-    // But for a live demo, maybe they want it faster? 
-    // The user said "2-hour intervals", so we follow that strictly.
+    // We only trigger once per even hour.
+    // To do this reliably, we'll check if we already built this hour.
     if (isEvenHour && isBeginningOfHour) {
-      console.log('🤖 SERVER: UTC Schedule Hit. Triggering Expansion...');
-      try {
-        await agents.expandNetwork();
-      } catch (e) {
-        console.error('Server Expansion Error:', e);
+      const lastBuildHour = db.getSetting('last_build_hour', '-1');
+      if (lastBuildHour !== String(now.getUTCHours())) {
+        console.log('🤖 SERVER: UTC Schedule Hit. Triggering Expansion...');
+        db.setSetting('last_build_hour', String(now.getUTCHours()));
+        try {
+          await agents.expandNetwork();
+        } catch (e) {
+          console.error('Server Expansion Error:', e);
+        }
       }
     }
   }, 60000); // Check every minute

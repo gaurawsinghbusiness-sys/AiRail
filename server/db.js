@@ -230,6 +230,7 @@ function resetDatabase() {
   db.run('DELETE FROM trains');
   db.run('DELETE FROM events');
   db.run('DELETE FROM stations');
+  db.run('DELETE FROM tracks');
   
   try {
     db.run('DELETE FROM sqlite_sequence'); // Reset Auto-Increment counters

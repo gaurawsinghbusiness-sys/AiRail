@@ -177,12 +177,19 @@ async function expandNetwork() {
     // 4. PHASE: EXECUTE
     const newId = db.addStation(proposal.name, proposal.x, proposal.y);
     
-    // SAFETY: If AI hallucinated a connectToId, fallback to the latest station
+    // SAFETY: If AI hallucinated a connectToId (or sent a String), force Number and check validity
     const validStations = db.getStations();
-    let connectionId = proposal.connectToId;
-    if (!validStations.find(s => s.id === connectionId)) {
-      connectionId = validStations[validStations.length - 2].id; // The one before the one we just added
-      logger.warn(`🐅 ORCHESTRATOR: Hallucination detected. Falling back to connection ID: ${connectionId}`);
+    let connectionId = Number(proposal.connectToId);
+    
+    if (isNaN(connectionId) || !validStations.find(s => s.id === connectionId)) {
+      // Fallback: Connect to the station created BEFORE the one we just added (the previous tail)
+      if (validStations.length >= 2) {
+        connectionId = validStations[validStations.length - 2].id;
+        logger.warn(`🐅 ORCHESTRATOR: Hallucination/Type mismatch detected. Falling back to connection ID: ${connectionId}`);
+      } else {
+        // Absolute fallback for first connection
+        connectionId = validStations[0].id;
+      }
     }
     
     db.addTrack(connectionId, newId);

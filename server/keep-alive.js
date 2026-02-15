@@ -7,10 +7,14 @@ const logger = require('./logger');
 
 function initKeepAlive() {
   const url = process.env.RENDER_EXTERNAL_URL;
+  /* 
   if (!url) {
     logger.info('Keep-alive: RENDER_EXTERNAL_URL not set, skipping self-ping.');
     return;
   }
+  */
+  logger.info('Keep-alive: Service DISABLED to save Render Free Tier hours.');
+  return;
 
   const pingUrl = `${url}/ping`;
   logger.info(`Keep-alive: Starting self-ping service for ${pingUrl}`);
